@@ -1,6 +1,6 @@
 # Set the python version as a build-time argument
 # with Python 3.12 as the default
-ARG PYTHON_VERSION=3.12-slim-bullseye
+ARG PYTHON_VERSION=3.12-slim-bookworm
 FROM python:${PYTHON_VERSION}
 
 # Create a virtual environment
@@ -17,7 +17,7 @@ ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
 # Install os dependencies for our mini vm
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     # for postgres
     libpq-dev \
     # for Pillow
@@ -40,10 +40,13 @@ COPY requirements.txt /tmp/requirements.txt
 # copy the project code into the container's working directory
 COPY ./src /code
 
+# manage.py is located in the DjangoSaas project directory
+WORKDIR /code/DjangoSaas
+
 # Install the Python project requirements
 RUN pip install --upgrade pip
 RUN pip install -r /tmp/requirements.txt
-RUN pip install gunicorn rav --upgrade
+RUN pip install gunicorn
 
 ARG DJANGO_SECRET_KEY
 ENV DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
@@ -51,9 +54,6 @@ ENV DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
 ARG DJANGO_DEBUG=0
 ENV DJANGO_DEBUG=${DJANGO_DEBUG}
 
-
-COPY ./rav.yaml /tmp/rav.yaml
-RUN rav download staticfiles_prod -f /tmp/rav.yaml
 
 # database isn't available during build
 # run any other commands that do not need the database
